@@ -39,12 +39,17 @@ const Index = () => {
               <Boxes className="w-16 h-16 text-primary" />
             </div>
           </div>
-          <h1 className="text-5xl font-bold tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
-            Cheslin
-          </h1>
-          <p className="text-xl text-muted-foreground max-w-lg mx-auto leading-relaxed">
-            Hybrid-distributed data storage for Torus Agents
-          </p>
+          <div className="space-y-3">
+            <h1 className="text-5xl font-bold tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
+              Cheslin
+            </h1>
+            <h2 className="text-3xl font-semibold tracking-tight bg-gradient-to-br from-foreground/80 to-foreground/50 bg-clip-text text-transparent">
+              Hybrid-distributed data storage
+            </h2>
+            <h3 className="text-2xl font-medium tracking-tight bg-gradient-to-br from-foreground/70 to-foreground/40 bg-clip-text text-transparent">
+              for Torus Agents
+            </h3>
+          </div>
           <div className="pt-4">
             <Button size="lg" className="font-medium" asChild>
               <Link to="/auth">Connect with XRPL</Link>
