@@ -43,10 +43,10 @@ const Index = () => {
             <h1 className="text-5xl font-bold tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
               Cheslin
             </h1>
-            <h2 className="text-3xl font-semibold tracking-tight bg-gradient-to-br from-foreground/80 to-foreground/50 bg-clip-text text-transparent">
+            <h2 className="text-3xl font-semibold tracking-tight bg-gradient-to-br from-foreground to-foreground/60 bg-clip-text text-transparent">
               Hybrid-distributed data storage
             </h2>
-            <h3 className="text-2xl font-medium tracking-tight bg-gradient-to-br from-foreground/70 to-foreground/40 bg-clip-text text-transparent">
+            <h3 className="text-2xl font-medium tracking-tight bg-gradient-to-br from-foreground to-foreground/50 bg-clip-text text-transparent">
               for Torus Agents
             </h3>
           </div>
