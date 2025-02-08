@@ -68,9 +68,14 @@ const Index = () => {
             <div className="p-2 bg-primary/5 rounded-xl">
               <Boxes className="w-8 h-8 text-primary" />
             </div>
-            <h1 className="text-3xl font-bold bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
-              Cheslin
-            </h1>
+            <div className="space-y-1">
+              <h1 className="text-3xl font-bold bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
+                Cheslin
+              </h1>
+              <h2 className="text-sm font-medium bg-gradient-to-br from-foreground to-foreground/60 bg-clip-text text-transparent">
+                Hybrid-distributed data storage for Torus Agents
+              </h2>
+            </div>
           </div>
           <Button onClick={handleSignOut} variant="outline" size="sm">
             Sign Out
