@@ -9,24 +9,65 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      credentials: {
+        Row: {
+          credential_data: Json
+          credential_type: string
+          expires_at: string | null
+          id: string
+          is_revoked: boolean | null
+          issued_at: string
+          profile_id: string | null
+        }
+        Insert: {
+          credential_data: Json
+          credential_type: string
+          expires_at?: string | null
+          id?: string
+          is_revoked?: boolean | null
+          issued_at?: string
+          profile_id?: string | null
+        }
+        Update: {
+          credential_data?: Json
+          credential_type?: string
+          expires_at?: string | null
+          id?: string
+          is_revoked?: boolean | null
+          issued_at?: string
+          profile_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credentials_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
+          did: string | null
           id: string
           updated_at: string
-          wallet_address: string | null
+          verification_status: boolean | null
         }
         Insert: {
           created_at?: string
+          did?: string | null
           id: string
           updated_at?: string
-          wallet_address?: string | null
+          verification_status?: boolean | null
         }
         Update: {
           created_at?: string
+          did?: string | null
           id?: string
           updated_at?: string
-          wallet_address?: string | null
+          verification_status?: boolean | null
         }
         Relationships: []
       }
