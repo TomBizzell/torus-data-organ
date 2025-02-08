@@ -1,10 +1,9 @@
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
-import { Xumm } from 'xumm';
 
 const DONATION_RECIPIENT = "0xd94c2621FBEC057d942aDAAE4E8364838315E8d9";
 const DONATION_AMOUNT = 5; // RLUSD amount as number
@@ -12,34 +11,13 @@ const DONATION_AMOUNT = 5; // RLUSD amount as number
 const CryptoDonation = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [connectedWallet, setConnectedWallet] = useState<{ address: string } | null>(null);
-  const [xummSDK, setXummSDK] = useState<Xumm | null>(null);
   const { toast } = useToast();
 
-  useEffect(() => {
-    const initializeXumm = async () => {
-      try {
-        const { data: { secret: apiKey }, error } = await supabase.functions.invoke('get-xumm-api-key');
-        
-        if (error || !apiKey) {
-          console.error('Error fetching XUMM API key:', error);
-          return;
-        }
-
-        const sdk = new Xumm(apiKey);
-        setXummSDK(sdk);
-      } catch (error) {
-        console.error('Error initializing XUMM SDK:', error);
-      }
-    };
-
-    initializeXumm();
-  }, []);
-
   const connectWallet = async () => {
-    if (!xummSDK) {
+    if (typeof window.xrpl === 'undefined') {
       toast({
-        title: "Error",
-        description: "XUMM SDK not initialized. Please try again.",
+        title: "Wallet Not Found",
+        description: "Please install XRPL Core Wallet extension to continue.",
         variant: "destructive"
       });
       return;
@@ -48,20 +26,14 @@ const CryptoDonation = () => {
     try {
       setIsProcessing(true);
       
-      // Create a sign request to connect the wallet
-      const request = await xummSDK.authorize();
+      // Request wallet connection
+      const response = await window.xrpl.wallet_connect();
       
-      // Open XUMM app or show QR code
-      window.open(request.next.always, '_blank');
-
-      // Wait for the user to scan and approve
-      const result = await request.websocket.resolved;
-      
-      if (result && result.account) {
-        setConnectedWallet({ address: result.account });
+      if (response.result.account) {
+        setConnectedWallet({ address: response.result.account });
         toast({
           title: "Wallet Connected",
-          description: `Connected to wallet: ${result.account.slice(0, 6)}...${result.account.slice(-4)}`,
+          description: `Connected to wallet: ${response.result.account.slice(0, 6)}...${response.result.account.slice(-4)}`,
         });
       }
     } catch (error) {
@@ -77,10 +49,10 @@ const CryptoDonation = () => {
   };
 
   const handleDonation = async () => {
-    if (!xummSDK) {
+    if (typeof window.xrpl === 'undefined') {
       toast({
-        title: "Error",
-        description: "XUMM SDK not initialized. Please try again.",
+        title: "Wallet Not Found",
+        description: "Please install XRPL Core Wallet extension to continue.",
         variant: "destructive"
       });
       return;
@@ -98,8 +70,8 @@ const CryptoDonation = () => {
     try {
       setIsProcessing(true);
       
-      // Create a payment transaction request
-      const request = await xummSDK.payload.createAndSubscribe({
+      // Create payment transaction
+      const txnRequest = {
         TransactionType: "Payment",
         Account: connectedWallet.address,
         Destination: DONATION_RECIPIENT,
@@ -107,17 +79,15 @@ const CryptoDonation = () => {
           currency: "USD",
           value: DONATION_AMOUNT.toString(),
           issuer: "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B" // Bitstamp's issuer address for USD
-        },
-        Flags: 0
+        }
+      };
+
+      // Request signature and submission
+      const response = await window.xrpl.wallet_sign_and_submit({
+        transaction: txnRequest
       });
 
-      // Open XUMM app or show QR code for payment
-      window.open(request.created.next.always, '_blank');
-
-      // Wait for the transaction to be signed and submitted
-      const result = await request.resolved;
-
-      if (result && result.txid) {
+      if (response.result.hash) {
         // Get the current user's ID
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error("User not authenticated");
@@ -125,7 +95,7 @@ const CryptoDonation = () => {
         // Record donation in database
         const { error: dbError } = await supabase.from('donations').insert({
           amount: DONATION_AMOUNT,
-          transaction_hash: result.txid,
+          transaction_hash: response.result.hash,
           user_id: user.id
         });
 
@@ -157,7 +127,7 @@ const CryptoDonation = () => {
       {!connectedWallet ? (
         <Button 
           onClick={connectWallet} 
-          disabled={isProcessing || !xummSDK}
+          disabled={isProcessing}
           className="w-full"
         >
           {isProcessing ? (
