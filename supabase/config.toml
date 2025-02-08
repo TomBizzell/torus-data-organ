@@ -10,5 +10,9 @@ schemas = ["public", "storage"]
 port = 54322
 
 [functions]
-[functions.orbitdb-sync]
-verify_jwt = false
+[functions.create-xumm-payment]
+verify_jwt = true
+
+[functions.check-xumm-payment]
+verify_jwt = true
+
