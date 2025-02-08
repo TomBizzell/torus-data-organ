@@ -3,21 +3,23 @@ import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Client, Wallet, xrpToDrops } from "xrpl";
+import { Client, Wallet, Payment } from "xrpl";
 
 const DONATION_RECIPIENT = "0xd94c2621FBEC057d942aDAAE4E8364838315E8d9";
-const DONATION_AMOUNT = "5"; // RLUSD amount
+const DONATION_AMOUNT = 5; // RLUSD amount as number
 
 const CryptoDonation = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const { toast } = useToast();
 
   const handleDonation = async () => {
+    let client: Client | null = null;
+    
     try {
       setIsProcessing(true);
       
       // Connect to XRPL testnet
-      const client = new Client("wss://s.altnet.rippletest.net:51233");
+      client = new Client("wss://s.altnet.rippletest.net:51233");
       await client.connect();
 
       // Get user's connected wallet
@@ -25,15 +27,16 @@ const CryptoDonation = () => {
       const wallet = Wallet.generate();
       
       // Prepare payment transaction
-      const payment = {
+      const payment: Payment = {
         TransactionType: "Payment",
         Account: wallet.address,
         Destination: DONATION_RECIPIENT,
         Amount: {
           currency: "USD",
-          value: DONATION_AMOUNT,
+          value: DONATION_AMOUNT.toString(),
           issuer: "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B" // Bitstamp's issuer address for USD
-        }
+        },
+        Flags: 0
       };
 
       // Sign and submit transaction
@@ -41,10 +44,15 @@ const CryptoDonation = () => {
       const signed = wallet.sign(prepared);
       const result = await client.submitAndWait(signed.tx_blob);
 
+      // Get the current user's ID
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("User not authenticated");
+
       // Record donation in database
       const { error: dbError } = await supabase.from('donations').insert({
         amount: DONATION_AMOUNT,
         transaction_hash: result.result.hash,
+        user_id: user.id
       });
 
       if (dbError) throw dbError;
@@ -64,7 +72,9 @@ const CryptoDonation = () => {
     } finally {
       setIsProcessing(false);
       // Close connection
-      client?.disconnect();
+      if (client) {
+        await client.disconnect();
+      }
     }
   };
 
