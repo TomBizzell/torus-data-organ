@@ -17,25 +17,24 @@ const AIDataHandler = () => {
   const handleDataSubmission = async (data: AIData) => {
     setIsProcessing(true);
     try {
-      const { error } = await supabase
-        .from('ai_agent_data')
-        .insert({
+      const response = await supabase.functions.invoke('ai-data-receiver', {
+        body: {
           agent_id: data.agent_id,
           data_payload: data.data_payload,
-          sync_status: 'pending'
-        });
+        },
+      });
 
-      if (error) throw error;
+      if (response.error) throw response.error;
 
       toast({
-        title: "Data Stored Successfully",
+        title: "Data Submitted Successfully",
         description: "The AI agent data has been stored and queued for OrbitDB sync.",
       });
     } catch (error) {
-      console.error('Error storing data:', error);
+      console.error('Error submitting data:', error);
       toast({
-        title: "Error Storing Data",
-        description: "There was an error storing the AI agent data.",
+        title: "Error Submitting Data",
+        description: "There was an error submitting the AI agent data.",
         variant: "destructive"
       });
     } finally {
