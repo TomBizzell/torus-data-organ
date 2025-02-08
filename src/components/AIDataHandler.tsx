@@ -7,6 +7,7 @@ import type { Json } from "@/integrations/supabase/types";
 import { useNavigate } from 'react-router-dom';
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface AIData {
   agent_id: string;
@@ -18,6 +19,7 @@ const AIDataHandler = () => {
   const [session, setSession] = useState(null);
   const [agentId, setAgentId] = useState('test-agent');
   const [dataPayload, setDataPayload] = useState(JSON.stringify({ test: 'data' }, null, 2));
+  const [authToken, setAuthToken] = useState('');
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -25,6 +27,9 @@ const AIDataHandler = () => {
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
+      if (session?.access_token) {
+        setAuthToken(session.access_token);
+      }
     });
 
     // Listen for auth changes
@@ -32,6 +37,9 @@ const AIDataHandler = () => {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
+      if (session?.access_token) {
+        setAuthToken(session.access_token);
+      }
     });
 
     return () => subscription.unsubscribe();
@@ -107,74 +115,144 @@ const AIDataHandler = () => {
     <div className="p-4 space-y-6">
       <h2 className="text-2xl font-bold mb-4">AI Data Handler</h2>
       
-      <Card className="p-6">
-        <h3 className="text-lg font-semibold mb-4">API Documentation</h3>
-        <div className="space-y-4">
-          <div>
-            <h4 className="font-medium">Endpoint</h4>
-            <code className="block bg-muted p-2 rounded">
-              POST https://lecahcsrnyquowhmxwer.functions.supabase.co/ai-data-receiver
-            </code>
-          </div>
-          
-          <div>
-            <h4 className="font-medium">Headers</h4>
-            <code className="block bg-muted p-2 rounded whitespace-pre">
-              {`Authorization: Bearer <user-jwt-token>
+      <Tabs defaultValue="docs" className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="docs">Documentation</TabsTrigger>
+          <TabsTrigger value="auth">Authentication</TabsTrigger>
+          <TabsTrigger value="test">Test API</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="docs">
+          <Card className="p-6">
+            <h3 className="text-lg font-semibold mb-4">API Documentation</h3>
+            <div className="space-y-4">
+              <div>
+                <h4 className="font-medium">Endpoint</h4>
+                <code className="block bg-muted p-2 rounded">
+                  POST https://lecahcsrnyquowhmxwer.functions.supabase.co/ai-data-receiver
+                </code>
+              </div>
+              
+              <div>
+                <h4 className="font-medium">Headers</h4>
+                <code className="block bg-muted p-2 rounded whitespace-pre">
+                  {`Authorization: Bearer <user-jwt-token>
 Content-Type: application/json`}
-            </code>
-          </div>
-          
-          <div>
-            <h4 className="font-medium">Request Body</h4>
-            <code className="block bg-muted p-2 rounded whitespace-pre">
-              {`{
+                </code>
+              </div>
+              
+              <div>
+                <h4 className="font-medium">Request Body</h4>
+                <code className="block bg-muted p-2 rounded whitespace-pre">
+                  {`{
   "agent_id": "string",
   "data_payload": object
 }`}
-            </code>
-          </div>
-        </div>
-      </Card>
+                </code>
+              </div>
+            </div>
+          </Card>
+        </TabsContent>
 
-      <Card className="p-6">
-        <h3 className="text-lg font-semibold mb-4">Test API</h3>
-        <div className="space-y-4">
-          <div>
-            <label htmlFor="agentId" className="block text-sm font-medium mb-2">
-              Agent ID
-            </label>
-            <input
-              id="agentId"
-              type="text"
-              value={agentId}
-              onChange={(e) => setAgentId(e.target.value)}
-              className="w-full p-2 border rounded"
-            />
-          </div>
+        <TabsContent value="auth">
+          <Card className="p-6">
+            <h3 className="text-lg font-semibold mb-4">Authentication Guide</h3>
+            <div className="space-y-4">
+              {!session ? (
+                <div>
+                  <p className="text-muted-foreground mb-4">
+                    Please sign in to get your authentication token.
+                  </p>
+                  <Button onClick={() => navigate('/auth')}>
+                    Sign In
+                  </Button>
+                </div>
+              ) : (
+                <>
+                  <div>
+                    <h4 className="font-medium mb-2">Your JWT Token</h4>
+                    <p className="text-sm text-muted-foreground mb-2">
+                      Use this token in your Authorization header when making API requests.
+                      This token will refresh automatically when you're logged in.
+                    </p>
+                    <div className="relative">
+                      <Textarea
+                        value={authToken}
+                        readOnly
+                        className="font-mono text-xs h-24"
+                      />
+                      <Button
+                        className="absolute top-2 right-2"
+                        variant="secondary"
+                        onClick={() => {
+                          navigator.clipboard.writeText(authToken);
+                          toast({
+                            title: "Token Copied",
+                            description: "The JWT token has been copied to your clipboard.",
+                          });
+                        }}
+                      >
+                        Copy
+                      </Button>
+                    </div>
+                  </div>
+                  <div>
+                    <h4 className="font-medium mb-2">Example cURL Request</h4>
+                    <code className="block bg-muted p-2 rounded text-xs whitespace-pre-wrap">
+                      {`curl -X POST \\
+  'https://lecahcsrnyquowhmxwer.functions.supabase.co/ai-data-receiver' \\
+  -H 'Authorization: Bearer ${authToken}' \\
+  -H 'Content-Type: application/json' \\
+  -d '{"agent_id": "test-agent", "data_payload": {"test": "data"}}'`}
+                    </code>
+                  </div>
+                </>
+              )}
+            </div>
+          </Card>
+        </TabsContent>
 
-          <div>
-            <label htmlFor="dataPayload" className="block text-sm font-medium mb-2">
-              Data Payload (JSON)
-            </label>
-            <Textarea
-              id="dataPayload"
-              value={dataPayload}
-              onChange={(e) => setDataPayload(e.target.value)}
-              className="font-mono"
-              rows={8}
-            />
-          </div>
+        <TabsContent value="test">
+          <Card className="p-6">
+            <h3 className="text-lg font-semibold mb-4">Test API</h3>
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="agentId" className="block text-sm font-medium mb-2">
+                  Agent ID
+                </label>
+                <input
+                  id="agentId"
+                  type="text"
+                  value={agentId}
+                  onChange={(e) => setAgentId(e.target.value)}
+                  className="w-full p-2 border rounded"
+                />
+              </div>
 
-          <Button 
-            onClick={handleDataSubmission}
-            disabled={isProcessing}
-            className="w-full"
-          >
-            {isProcessing ? 'Processing...' : 'Test Data Submission'}
-          </Button>
-        </div>
-      </Card>
+              <div>
+                <label htmlFor="dataPayload" className="block text-sm font-medium mb-2">
+                  Data Payload (JSON)
+                </label>
+                <Textarea
+                  id="dataPayload"
+                  value={dataPayload}
+                  onChange={(e) => setDataPayload(e.target.value)}
+                  className="font-mono"
+                  rows={8}
+                />
+              </div>
+
+              <Button 
+                onClick={handleDataSubmission}
+                disabled={isProcessing}
+                className="w-full"
+              >
+                {isProcessing ? 'Processing...' : 'Test Data Submission'}
+              </Button>
+            </div>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
