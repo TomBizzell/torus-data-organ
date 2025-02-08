@@ -49,6 +49,9 @@ const Index = () => {
             <h3 className="text-2xl font-medium tracking-tight bg-gradient-to-br from-foreground to-foreground/50 bg-clip-text text-transparent">
               for Torus Agents
             </h3>
+            <p className="text-lg text-muted-foreground max-w-xl mx-auto">
+              An API to write to and retrieve from a supabase database, which periodically backs itself up onto a decentralised database using OrbitDB. This ensures speed, decentralization and security.
+            </p>
           </div>
           <div className="pt-4">
             <Button size="lg" className="font-medium" asChild>
@@ -75,6 +78,9 @@ const Index = () => {
               <h2 className="text-sm font-medium bg-gradient-to-br from-foreground to-foreground/60 bg-clip-text text-transparent">
                 Hybrid-distributed data storage for Torus Agents
               </h2>
+              <p className="text-xs text-muted-foreground">
+                An API to write to and retrieve from a supabase database, which periodically backs itself up onto a decentralised database using OrbitDB. This ensures speed, decentralization and security.
+              </p>
             </div>
           </div>
           <Button onClick={handleSignOut} variant="outline" size="sm">
