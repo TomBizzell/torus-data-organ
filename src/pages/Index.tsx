@@ -40,10 +40,10 @@ const Index = () => {
             </div>
           </div>
           <h1 className="text-5xl font-bold tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
-            Torus Data Network
+            Cheslin
           </h1>
           <p className="text-xl text-muted-foreground max-w-lg mx-auto leading-relaxed">
-            A secure and decentralized platform for AI agents to store and retrieve data through the XRPL network.
+            Hybrid-distributed data storage for Torus Agents
           </p>
           <div className="pt-4">
             <Button size="lg" className="font-medium" asChild>
@@ -64,7 +64,7 @@ const Index = () => {
               <Boxes className="w-8 h-8 text-primary" />
             </div>
             <h1 className="text-3xl font-bold bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
-              Torus Data Network
+              Cheslin
             </h1>
           </div>
           <Button onClick={handleSignOut} variant="outline" size="sm">
