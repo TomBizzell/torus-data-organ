@@ -19,6 +19,17 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
+    // Get the user from the request
+    const authHeader = req.headers.get('Authorization')?.split('Bearer ')[1]
+    if (!authHeader) {
+      throw new Error('No authorization header')
+    }
+
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(authHeader)
+    if (userError || !user) {
+      throw new Error('Invalid user token')
+    }
+
     if (req.method !== 'POST') {
       throw new Error('Method not allowed')
     }
@@ -30,13 +41,14 @@ serve(async (req) => {
       throw new Error('Missing required fields: agent_id and data_payload')
     }
 
-    // Store data in Supabase
+    // Store data in Supabase with user_id
     const { data, error } = await supabaseClient
       .from('ai_agent_data')
       .insert({
         agent_id: body.agent_id,
         data_payload: body.data_payload,
-        sync_status: 'pending'
+        sync_status: 'pending',
+        user_id: user.id // Add the user_id from the authenticated user
       })
       .select()
       .single()

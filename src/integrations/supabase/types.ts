@@ -18,6 +18,7 @@ export type Database = {
           orbit_db_hash: string | null
           sync_status: Database["public"]["Enums"]["sync_status"] | null
           updated_at: string
+          user_id: string
         }
         Insert: {
           agent_id: string
@@ -27,6 +28,7 @@ export type Database = {
           orbit_db_hash?: string | null
           sync_status?: Database["public"]["Enums"]["sync_status"] | null
           updated_at?: string
+          user_id?: string
         }
         Update: {
           agent_id?: string
@@ -36,6 +38,7 @@ export type Database = {
           orbit_db_hash?: string | null
           sync_status?: Database["public"]["Enums"]["sync_status"] | null
           updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }

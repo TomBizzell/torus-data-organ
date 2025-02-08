@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import type { Json } from "@/integrations/supabase/types";
+import { useNavigate } from 'react-router-dom';
 
 interface AIData {
   agent_id: string;
@@ -12,9 +13,37 @@ interface AIData {
 
 const AIDataHandler = () => {
   const [isProcessing, setIsProcessing] = useState(false);
+  const [session, setSession] = useState(null);
   const { toast } = useToast();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+    });
+
+    // Listen for auth changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const handleDataSubmission = async (data: AIData) => {
+    if (!session?.user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to submit data.",
+        variant: "destructive"
+      });
+      navigate('/auth');
+      return;
+    }
+
     setIsProcessing(true);
     try {
       const response = await supabase.functions.invoke('ai-data-receiver', {
