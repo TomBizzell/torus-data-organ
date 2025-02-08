@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import AIDataHandler from "@/components/AIDataHandler";
 
 const Index = () => {
   const [session, setSession] = useState(null);
@@ -32,9 +33,9 @@ const Index = () => {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center space-y-4">
-          <h1 className="text-4xl font-bold mb-4">Welcome to XRPL DID Auth</h1>
+          <h1 className="text-4xl font-bold mb-4">Welcome to Torus Data Network</h1>
           <p className="text-xl text-muted-foreground mb-8">
-            Authenticate using your XRPL account
+            Please authenticate to access the data network
           </p>
           <Button asChild>
             <Link to="/auth">Connect with XRPL</Link>
@@ -45,15 +46,15 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="text-center space-y-4">
-        <h1 className="text-4xl font-bold mb-4">Welcome!</h1>
-        <p className="text-xl text-muted-foreground mb-8">
-          You are authenticated with XRPL DID
-        </p>
-        <Button onClick={handleSignOut} variant="outline">
-          Sign Out
-        </Button>
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-4xl font-bold">Torus Data Network</h1>
+          <Button onClick={handleSignOut} variant="outline">
+            Sign Out
+          </Button>
+        </div>
+        <AIDataHandler />
       </div>
     </div>
   );

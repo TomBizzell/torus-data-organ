@@ -9,6 +9,36 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      ai_agent_data: {
+        Row: {
+          agent_id: string
+          created_at: string
+          data_payload: Json
+          id: string
+          orbit_db_hash: string | null
+          sync_status: Database["public"]["Enums"]["sync_status"] | null
+          updated_at: string
+        }
+        Insert: {
+          agent_id: string
+          created_at?: string
+          data_payload: Json
+          id?: string
+          orbit_db_hash?: string | null
+          sync_status?: Database["public"]["Enums"]["sync_status"] | null
+          updated_at?: string
+        }
+        Update: {
+          agent_id?: string
+          created_at?: string
+          data_payload?: Json
+          id?: string
+          orbit_db_hash?: string | null
+          sync_status?: Database["public"]["Enums"]["sync_status"] | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       credentials: {
         Row: {
           credential_data: Json
@@ -79,7 +109,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      sync_status: "pending" | "synced" | "failed"
     }
     CompositeTypes: {
       [_ in never]: never
