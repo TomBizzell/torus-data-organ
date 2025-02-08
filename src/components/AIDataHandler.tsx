@@ -3,10 +3,11 @@ import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import type { Json } from "@/integrations/supabase/types";
 
 interface AIData {
   agent_id: string;
-  data_payload: object;
+  data_payload: Json;
 }
 
 const AIDataHandler = () => {
@@ -71,12 +72,10 @@ const AIDataHandler = () => {
   return (
     <div className="p-4">
       <h2 className="text-2xl font-bold mb-4">AI Data Handler</h2>
-      {/* This is a placeholder component. In practice, this would be 
-          integrated with your API endpoint and receive data automatically */}
       <Button 
         onClick={() => handleDataSubmission({
           agent_id: 'test-agent',
-          data_payload: { test: 'data' }
+          data_payload: { test: 'data' } as Json
         })}
         disabled={isProcessing}
       >
