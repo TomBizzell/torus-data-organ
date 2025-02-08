@@ -115,7 +115,6 @@ const XRPLAuth = () => {
         </form>
       </div>
     </div>
-  </div>
   );
 };
 
