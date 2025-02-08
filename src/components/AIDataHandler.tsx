@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
@@ -8,6 +7,8 @@ import { useNavigate } from 'react-router-dom';
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface AIData {
   agent_id: string;
@@ -20,11 +21,14 @@ const AIDataHandler = () => {
   const [agentId, setAgentId] = useState('test-agent');
   const [dataPayload, setDataPayload] = useState(JSON.stringify({ test: 'data' }, null, 2));
   const [authToken, setAuthToken] = useState('');
+  const [retrievedData, setRetrievedData] = useState<any[]>([]);
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
+  const [limit, setLimit] = useState('10');
   const { toast } = useToast();
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       if (session?.access_token) {
@@ -32,7 +36,6 @@ const AIDataHandler = () => {
       }
     });
 
-    // Listen for auth changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -85,7 +88,49 @@ const AIDataHandler = () => {
     }
   };
 
-  // Listen for real-time updates on sync status
+  const handleDataRetrieval = async () => {
+    if (!session?.user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to retrieve data.",
+        variant: "destructive"
+      });
+      navigate('/auth');
+      return;
+    }
+
+    try {
+      setIsProcessing(true);
+      
+      const response = await supabase.functions.invoke('ai-data-retriever', {
+        body: {
+          agent_id: agentId,
+          from_date: fromDate || undefined,
+          to_date: toDate || undefined,
+          limit: limit ? parseInt(limit) : undefined,
+        },
+      });
+
+      if (response.error) throw response.error;
+
+      setRetrievedData(response.data.data);
+      
+      toast({
+        title: "Data Retrieved Successfully",
+        description: `Retrieved ${response.data.data.length} records.`,
+      });
+    } catch (error) {
+      console.error('Error retrieving data:', error);
+      toast({
+        title: "Error Retrieving Data",
+        description: "There was an error retrieving the AI agent data.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   useEffect(() => {
     const channel = supabase
       .channel('ai-data-sync')
@@ -116,25 +161,33 @@ const AIDataHandler = () => {
       <h2 className="text-2xl font-bold mb-4">AI Data Handler</h2>
       
       <Tabs defaultValue="docs" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="docs">Documentation</TabsTrigger>
           <TabsTrigger value="auth">Authentication</TabsTrigger>
-          <TabsTrigger value="test">Test API</TabsTrigger>
+          <TabsTrigger value="submit">Submit Data</TabsTrigger>
+          <TabsTrigger value="retrieve">Retrieve Data</TabsTrigger>
         </TabsList>
 
         <TabsContent value="docs">
           <Card className="p-6">
             <h3 className="text-lg font-semibold mb-4">API Documentation</h3>
-            <div className="space-y-4">
+            <div className="space-y-6">
               <div>
-                <h4 className="font-medium">Endpoint</h4>
+                <h4 className="font-medium mb-2">Submit Data Endpoint</h4>
                 <code className="block bg-muted p-2 rounded">
                   POST https://lecahcsrnyquowhmxwer.functions.supabase.co/ai-data-receiver
                 </code>
               </div>
+
+              <div>
+                <h4 className="font-medium mb-2">Retrieve Data Endpoint</h4>
+                <code className="block bg-muted p-2 rounded">
+                  POST https://lecahcsrnyquowhmxwer.functions.supabase.co/ai-data-retriever
+                </code>
+              </div>
               
               <div>
-                <h4 className="font-medium">Headers</h4>
+                <h4 className="font-medium mb-2">Headers (Both Endpoints)</h4>
                 <code className="block bg-muted p-2 rounded whitespace-pre">
                   {`Authorization: Bearer <user-jwt-token>
 Content-Type: application/json`}
@@ -142,11 +195,24 @@ Content-Type: application/json`}
               </div>
               
               <div>
-                <h4 className="font-medium">Request Body</h4>
+                <h4 className="font-medium mb-2">Submit Data Request Body</h4>
                 <code className="block bg-muted p-2 rounded whitespace-pre">
                   {`{
   "agent_id": "string",
   "data_payload": object
+}`}
+                </code>
+              </div>
+
+              <div>
+                <h4 className="font-medium mb-2">Retrieve Data Request Body</h4>
+                <code className="block bg-muted p-2 rounded whitespace-pre">
+                  {`{
+  "agent_id": "string",
+  "from_date": "ISO date string (optional)",
+  "to_date": "ISO date string (optional)",
+  "limit": number (optional),
+  "offset": number (optional)
 }`}
                 </code>
               </div>
@@ -212,27 +278,22 @@ Content-Type: application/json`}
           </Card>
         </TabsContent>
 
-        <TabsContent value="test">
+        <TabsContent value="submit">
           <Card className="p-6">
-            <h3 className="text-lg font-semibold mb-4">Test API</h3>
+            <h3 className="text-lg font-semibold mb-4">Submit AI Agent Data</h3>
             <div className="space-y-4">
               <div>
-                <label htmlFor="agentId" className="block text-sm font-medium mb-2">
-                  Agent ID
-                </label>
-                <input
-                  id="agentId"
-                  type="text"
+                <Label htmlFor="submitAgentId">Agent ID</Label>
+                <Input
+                  id="submitAgentId"
                   value={agentId}
                   onChange={(e) => setAgentId(e.target.value)}
-                  className="w-full p-2 border rounded"
+                  className="w-full"
                 />
               </div>
 
               <div>
-                <label htmlFor="dataPayload" className="block text-sm font-medium mb-2">
-                  Data Payload (JSON)
-                </label>
+                <Label htmlFor="dataPayload">Data Payload (JSON)</Label>
                 <Textarea
                   id="dataPayload"
                   value={dataPayload}
@@ -247,8 +308,79 @@ Content-Type: application/json`}
                 disabled={isProcessing}
                 className="w-full"
               >
-                {isProcessing ? 'Processing...' : 'Test Data Submission'}
+                {isProcessing ? 'Processing...' : 'Submit Data'}
               </Button>
+            </div>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="retrieve">
+          <Card className="p-6">
+            <h3 className="text-lg font-semibold mb-4">Retrieve AI Agent Data</h3>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="retrieveAgentId">Agent ID</Label>
+                <Input
+                  id="retrieveAgentId"
+                  value={agentId}
+                  onChange={(e) => setAgentId(e.target.value)}
+                  className="w-full"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="fromDate">From Date</Label>
+                  <Input
+                    id="fromDate"
+                    type="datetime-local"
+                    value={fromDate}
+                    onChange={(e) => setFromDate(e.target.value)}
+                    className="w-full"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="toDate">To Date</Label>
+                  <Input
+                    id="toDate"
+                    type="datetime-local"
+                    value={toDate}
+                    onChange={(e) => setToDate(e.target.value)}
+                    className="w-full"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="limit">Limit Results</Label>
+                <Input
+                  id="limit"
+                  type="number"
+                  value={limit}
+                  onChange={(e) => setLimit(e.target.value)}
+                  className="w-full"
+                  min="1"
+                  max="100"
+                />
+              </div>
+
+              <Button 
+                onClick={handleDataRetrieval}
+                disabled={isProcessing}
+                className="w-full mb-4"
+              >
+                {isProcessing ? 'Processing...' : 'Retrieve Data'}
+              </Button>
+
+              {retrievedData.length > 0 && (
+                <div>
+                  <h4 className="font-medium mb-2">Retrieved Data</h4>
+                  <pre className="bg-muted p-4 rounded overflow-auto max-h-96">
+                    {JSON.stringify(retrievedData, null, 2)}
+                  </pre>
+                </div>
+              )}
             </div>
           </Card>
         </TabsContent>
