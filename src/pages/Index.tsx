@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import AIDataHandler from "@/components/AIDataHandler";
+import CryptoDonation from "@/components/CryptoDonation";
 import { Boxes } from "lucide-react";
 
 const Index = () => {
@@ -88,6 +89,7 @@ const Index = () => {
           </Button>
         </div>
         <AIDataHandler />
+        <CryptoDonation />
       </div>
     </div>
   );
