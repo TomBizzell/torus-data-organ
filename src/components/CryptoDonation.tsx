@@ -3,37 +3,61 @@ import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Client, Wallet, Payment } from "xrpl";
 import { Loader2 } from "lucide-react";
 import { Xumm } from 'xumm';
 
 const DONATION_RECIPIENT = "0xd94c2621FBEC057d942aDAAE4E8364838315E8d9";
 const DONATION_AMOUNT = 5; // RLUSD amount as number
 
-// Initialize XUMM SDK
-const xumm = new Xumm('api-key'); // We'll need to get this from Supabase secrets
-
 const CryptoDonation = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [connectedWallet, setConnectedWallet] = useState<{ address: string } | null>(null);
+  const [xummSDK, setXummSDK] = useState<Xumm | null>(null);
   const { toast } = useToast();
 
+  useEffect(() => {
+    const initializeXumm = async () => {
+      try {
+        const { data: { secret: apiKey }, error } = await supabase.functions.invoke('get-xumm-api-key');
+        
+        if (error || !apiKey) {
+          console.error('Error fetching XUMM API key:', error);
+          return;
+        }
+
+        const sdk = new Xumm(apiKey);
+        setXummSDK(sdk);
+      } catch (error) {
+        console.error('Error initializing XUMM SDK:', error);
+      }
+    };
+
+    initializeXumm();
+  }, []);
+
   const connectWallet = async () => {
+    if (!xummSDK) {
+      toast({
+        title: "Error",
+        description: "XUMM SDK not initialized. Please try again.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
       setIsProcessing(true);
       
       // Create a sign request to connect the wallet
-      const request = await xumm.authorize();
+      const request = await xummSDK.authorize();
       
       // Open XUMM app or show QR code
-      if (request.url) {
-        window.open(request.url, '_blank');
-      }
+      window.open(request.next.always, '_blank');
 
       // Wait for the user to scan and approve
-      const result = await request.resolved;
+      const result = await request.websocket.resolved;
       
-      if (result.account) {
+      if (result && result.account) {
         setConnectedWallet({ address: result.account });
         toast({
           title: "Wallet Connected",
@@ -53,6 +77,15 @@ const CryptoDonation = () => {
   };
 
   const handleDonation = async () => {
+    if (!xummSDK) {
+      toast({
+        title: "Error",
+        description: "XUMM SDK not initialized. Please try again.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     if (!connectedWallet) {
       toast({
         title: "Wallet Required",
@@ -66,7 +99,7 @@ const CryptoDonation = () => {
       setIsProcessing(true);
       
       // Create a payment transaction request
-      const request = await xumm.payload.create({
+      const request = await xummSDK.payload.createAndSubscribe({
         TransactionType: "Payment",
         Account: connectedWallet.address,
         Destination: DONATION_RECIPIENT,
@@ -74,18 +107,17 @@ const CryptoDonation = () => {
           currency: "USD",
           value: DONATION_AMOUNT.toString(),
           issuer: "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B" // Bitstamp's issuer address for USD
-        }
+        },
+        Flags: 0
       });
 
       // Open XUMM app or show QR code for payment
-      if (request.next.always) {
-        window.open(request.next.always, '_blank');
-      }
+      window.open(request.created.next.always, '_blank');
 
       // Wait for the transaction to be signed and submitted
       const result = await request.resolved;
 
-      if (result.txid) {
+      if (result && result.txid) {
         // Get the current user's ID
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error("User not authenticated");
@@ -125,7 +157,7 @@ const CryptoDonation = () => {
       {!connectedWallet ? (
         <Button 
           onClick={connectWallet} 
-          disabled={isProcessing}
+          disabled={isProcessing || !xummSDK}
           className="w-full"
         >
           {isProcessing ? (
