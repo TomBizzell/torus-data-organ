@@ -1,32 +1,45 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Client, Wallet, Payment } from "xrpl";
 import { Loader2 } from "lucide-react";
+import { Xumm } from 'xumm';
 
 const DONATION_RECIPIENT = "0xd94c2621FBEC057d942aDAAE4E8364838315E8d9";
 const DONATION_AMOUNT = 5; // RLUSD amount as number
 
+// Initialize XUMM SDK
+const xumm = new Xumm('api-key'); // We'll need to get this from Supabase secrets
+
 const CryptoDonation = () => {
   const [isProcessing, setIsProcessing] = useState(false);
-  const [connectedWallet, setConnectedWallet] = useState<Wallet | null>(null);
+  const [connectedWallet, setConnectedWallet] = useState<{ address: string } | null>(null);
   const { toast } = useToast();
 
   const connectWallet = async () => {
     try {
       setIsProcessing(true);
       
-      // In a real implementation, you would integrate with a wallet provider
-      // For demo purposes, we're generating a test wallet
-      const testWallet = Wallet.generate();
-      setConnectedWallet(testWallet);
+      // Create a sign request to connect the wallet
+      const request = await xumm.authorize();
       
-      toast({
-        title: "Wallet Connected",
-        description: `Connected to wallet: ${testWallet.address.slice(0, 6)}...${testWallet.address.slice(-4)}`,
-      });
+      // Open XUMM app or show QR code
+      if (request.url) {
+        window.open(request.url, '_blank');
+      }
+
+      // Wait for the user to scan and approve
+      const result = await request.resolved;
+      
+      if (result.account) {
+        setConnectedWallet({ address: result.account });
+        toast({
+          title: "Wallet Connected",
+          description: `Connected to wallet: ${result.account.slice(0, 6)}...${result.account.slice(-4)}`,
+        });
+      }
     } catch (error) {
       console.error('Wallet connection error:', error);
       toast({
@@ -49,17 +62,11 @@ const CryptoDonation = () => {
       return;
     }
 
-    let client: Client | null = null;
-    
     try {
       setIsProcessing(true);
       
-      // Connect to XRPL testnet
-      client = new Client("wss://s.altnet.rippletest.net:51233");
-      await client.connect();
-      
-      // Prepare payment transaction
-      const payment: Payment = {
+      // Create a payment transaction request
+      const request = await xumm.payload.create({
         TransactionType: "Payment",
         Account: connectedWallet.address,
         Destination: DONATION_RECIPIENT,
@@ -67,33 +74,36 @@ const CryptoDonation = () => {
           currency: "USD",
           value: DONATION_AMOUNT.toString(),
           issuer: "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B" // Bitstamp's issuer address for USD
-        },
-        Flags: 0
-      };
-
-      // Sign and submit transaction
-      const prepared = await client.autofill(payment);
-      const signed = connectedWallet.sign(prepared);
-      const result = await client.submitAndWait(signed.tx_blob);
-
-      // Get the current user's ID
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("User not authenticated");
-
-      // Record donation in database
-      const { error: dbError } = await supabase.from('donations').insert({
-        amount: DONATION_AMOUNT,
-        transaction_hash: result.result.hash,
-        user_id: user.id
+        }
       });
 
-      if (dbError) throw dbError;
+      // Open XUMM app or show QR code for payment
+      if (request.next.always) {
+        window.open(request.next.always, '_blank');
+      }
 
-      toast({
-        title: "Donation Successful",
-        description: `Thank you for your ${DONATION_AMOUNT} RLUSD donation!`,
-      });
+      // Wait for the transaction to be signed and submitted
+      const result = await request.resolved;
 
+      if (result.txid) {
+        // Get the current user's ID
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error("User not authenticated");
+
+        // Record donation in database
+        const { error: dbError } = await supabase.from('donations').insert({
+          amount: DONATION_AMOUNT,
+          transaction_hash: result.txid,
+          user_id: user.id
+        });
+
+        if (dbError) throw dbError;
+
+        toast({
+          title: "Donation Successful",
+          description: `Thank you for your ${DONATION_AMOUNT} RLUSD donation!`,
+        });
+      }
     } catch (error) {
       console.error('Donation error:', error);
       toast({
@@ -103,10 +113,6 @@ const CryptoDonation = () => {
       });
     } finally {
       setIsProcessing(false);
-      // Close connection
-      if (client) {
-        await client.disconnect();
-      }
     }
   };
 
