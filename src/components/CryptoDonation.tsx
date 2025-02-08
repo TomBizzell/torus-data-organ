@@ -5,6 +5,15 @@ import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
 
+declare global {
+  interface Window {
+    core?: {
+      connect(): Promise<{ address: string }>;
+      requestSignature(transaction: any): Promise<{ hash: string }>;
+    }
+  }
+}
+
 const DONATION_RECIPIENT = "0xd94c2621FBEC057d942aDAAE4E8364838315E8d9";
 const DONATION_AMOUNT = 5; // RLUSD amount as number
 
@@ -14,10 +23,10 @@ const CryptoDonation = () => {
   const { toast } = useToast();
 
   const connectWallet = async () => {
-    if (typeof window.xrpl === 'undefined') {
+    if (typeof window.core === 'undefined') {
       toast({
         title: "Wallet Not Found",
-        description: "Please install XRPL Core Wallet extension to continue.",
+        description: "Please install Core Wallet extension to continue.",
         variant: "destructive"
       });
       return;
@@ -27,13 +36,13 @@ const CryptoDonation = () => {
       setIsProcessing(true);
       
       // Request wallet connection
-      const response = await window.xrpl.wallet_connect();
+      const response = await window.core.connect();
       
-      if (response.result.account) {
-        setConnectedWallet({ address: response.result.account });
+      if (response.address) {
+        setConnectedWallet({ address: response.address });
         toast({
           title: "Wallet Connected",
-          description: `Connected to wallet: ${response.result.account.slice(0, 6)}...${response.result.account.slice(-4)}`,
+          description: `Connected to wallet: ${response.address.slice(0, 6)}...${response.address.slice(-4)}`,
         });
       }
     } catch (error) {
@@ -49,10 +58,10 @@ const CryptoDonation = () => {
   };
 
   const handleDonation = async () => {
-    if (typeof window.xrpl === 'undefined') {
+    if (typeof window.core === 'undefined') {
       toast({
         title: "Wallet Not Found",
-        description: "Please install XRPL Core Wallet extension to continue.",
+        description: "Please install Core Wallet extension to continue.",
         variant: "destructive"
       });
       return;
@@ -72,10 +81,10 @@ const CryptoDonation = () => {
       
       // Create payment transaction
       const txnRequest = {
-        TransactionType: "Payment",
-        Account: connectedWallet.address,
-        Destination: DONATION_RECIPIENT,
-        Amount: {
+        type: "Payment",
+        from: connectedWallet.address,
+        to: DONATION_RECIPIENT,
+        amount: {
           currency: "USD",
           value: DONATION_AMOUNT.toString(),
           issuer: "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B" // Bitstamp's issuer address for USD
@@ -83,11 +92,9 @@ const CryptoDonation = () => {
       };
 
       // Request signature and submission
-      const response = await window.xrpl.wallet_sign_and_submit({
-        transaction: txnRequest
-      });
+      const response = await window.core.requestSignature(txnRequest);
 
-      if (response.result.hash) {
+      if (response.hash) {
         // Get the current user's ID
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error("User not authenticated");
@@ -95,7 +102,7 @@ const CryptoDonation = () => {
         // Record donation in database
         const { error: dbError } = await supabase.from('donations').insert({
           amount: DONATION_AMOUNT,
-          transaction_hash: response.result.hash,
+          transaction_hash: response.hash,
           user_id: user.id
         });
 
