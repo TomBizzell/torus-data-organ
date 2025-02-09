@@ -14,7 +14,7 @@ serve(async (req) => {
 
   try {
     const { amount, user_id, return_url } = await req.json()
-    console.log('Creating XUMM payment request for amount:', amount)
+    console.log('Creating XUMM payment request with params:', { amount, user_id, return_url });
 
     // Convert amount to drops (1 XRP = 1,000,000 drops)
     // Ensure the amount is formatted correctly
@@ -28,13 +28,15 @@ serve(async (req) => {
       throw new Error('XUMM API credentials not configured')
     }
 
+    console.log('Making request to XUMM API...');
     const xummApiUrl = 'https://xumm.app/api/v1/platform/payload'
     const response = await fetch(xummApiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'X-API-Key': xummApiKey,
-        'X-API-Secret': xummApiSecret
+        'X-API-Secret': xummApiSecret,
+        'Accept': 'application/json'
       },
       body: JSON.stringify({
         txjson: {
@@ -60,19 +62,39 @@ serve(async (req) => {
     let payload
     try {
       payload = JSON.parse(responseText)
+      console.log('Parsed XUMM API response:', payload)
     } catch (e) {
       console.error('Failed to parse XUMM API response:', e)
       throw new Error(`Invalid response from XUMM API: ${responseText}`)
     }
 
+    // Check for specific XUMM API error responses
     if (!response.ok) {
-      console.error('XUMM API Error Details:', payload)
-      throw new Error(`XUMM API Error: ${payload.error?.reference || payload.message || response.statusText}`)
+      console.error('XUMM API Error Details:', {
+        status: response.status,
+        statusText: response.statusText,
+        payload
+      })
+      
+      let errorMessage = 'XUMM API Error'
+      if (payload.error) {
+        if (typeof payload.error === 'object') {
+          errorMessage += `: ${JSON.stringify(payload.error)}`
+        } else {
+          errorMessage += `: ${payload.error}`
+        }
+      } else if (payload.message) {
+        errorMessage += `: ${payload.message}`
+      } else if (response.statusText) {
+        errorMessage += `: ${response.statusText}`
+      }
+      
+      throw new Error(errorMessage)
     }
 
-    console.log('XUMM payment request response:', payload)
-
+    // Verify required response fields
     if (!payload?.next?.always) {
+      console.error('Invalid XUMM API response structure:', payload)
       throw new Error('Invalid response from XUMM API - missing QR URL')
     }
 
@@ -87,13 +109,15 @@ serve(async (req) => {
     console.error('Detailed error creating XUMM payment:', {
       error: error.message,
       stack: error.stack,
-      name: error.name
+      name: error.name,
+      cause: error.cause
     })
     
     return new Response(
       JSON.stringify({ 
         error: `Error creating XUMM payment: ${error.message}`,
-        details: error.stack 
+        details: error.stack,
+        name: error.name
       }),
       { 
         status: 500, 
