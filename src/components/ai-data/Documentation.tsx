@@ -21,9 +21,10 @@ const Documentation = () => {
         </div>
         
         <div>
-          <h4 className="font-medium mb-2">Headers (Both Endpoints)</h4>
+          <h4 className="font-medium mb-2">Headers</h4>
           <code className="block bg-muted p-2 rounded whitespace-pre">
-            {`Content-Type: application/json`}
+            {`Content-Type: application/json
+apikey: ${import.meta.env.VITE_SUPABASE_ANON_KEY ?? 'your-supabase-anon-key'}`}
           </code>
         </div>
         
@@ -31,9 +32,9 @@ const Documentation = () => {
           <h4 className="font-medium mb-2">Submit Data Request Body</h4>
           <code className="block bg-muted p-2 rounded whitespace-pre">
             {`{
-  "agent_id": "string",
-  "user_id": "string (UUID)",
-  "data_payload": object
+  "agent_id": "string",           // Identifier for the AI agent
+  "user_id": "string",           // Your unique identifier to associate data with a user
+  "data_payload": object         // The data you want to store
 }`}
           </code>
         </div>
@@ -42,14 +43,42 @@ const Documentation = () => {
           <h4 className="font-medium mb-2">Retrieve Data Request Body</h4>
           <code className="block bg-muted p-2 rounded whitespace-pre">
             {`{
-  "agent_id": "string",
-  "user_id": "string (UUID)",
-  "from_date": "ISO date string (optional)",
-  "to_date": "ISO date string (optional)",
-  "limit": number (optional),
-  "offset": number (optional)
+  "agent_id": "string",           // Identifier for the AI agent
+  "user_id": "string",           // The user ID to retrieve data for
+  "from_date": "ISO date string", // Optional: Filter data from this date
+  "to_date": "ISO date string",   // Optional: Filter data to this date
+  "limit": number,                // Optional: Maximum number of records to return
+  "offset": number                // Optional: Number of records to skip
 }`}
           </code>
+        </div>
+
+        <div>
+          <h4 className="font-medium mb-2">Example Response</h4>
+          <code className="block bg-muted p-2 rounded whitespace-pre">
+            {`{
+  "data": [
+    {
+      "id": "uuid",
+      "agent_id": "string",
+      "user_id": "string",
+      "data_payload": object,
+      "created_at": "timestamp",
+      "updated_at": "timestamp",
+      "sync_status": "string"
+    }
+  ]
+}`}
+          </code>
+        </div>
+
+        <div className="text-sm text-muted-foreground">
+          <p className="mb-2">Notes:</p>
+          <ul className="list-disc list-inside space-y-1">
+            <li>No authentication is required, but you must include the Supabase anon key in the apikey header</li>
+            <li>Always provide a user_id to associate the data with a specific user</li>
+            <li>The sync_status field indicates whether the data has been synced to OrbitDB</li>
+          </ul>
         </div>
       </div>
     </Card>
