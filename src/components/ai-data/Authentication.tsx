@@ -31,10 +31,39 @@ const Authentication = () => {
     });
   };
 
+  const copyApiKey = async () => {
+    await navigator.clipboard.writeText(import.meta.env.VITE_SUPABASE_ANON_KEY ?? '');
+    toast({
+      title: "API Key Copied",
+      description: "The API key has been copied to your clipboard.",
+    });
+  };
+
   return (
     <Card className="p-6">
-      <h3 className="text-lg font-semibold mb-4">User ID Guide</h3>
+      <h3 className="text-lg font-semibold mb-4">Authentication Guide</h3>
       <div className="space-y-4">
+        <div>
+          <h4 className="font-medium mb-2">API Key</h4>
+          <p className="text-sm text-muted-foreground mb-2">
+            Use this API key in the 'apikey' header for all your requests.
+          </p>
+          <div className="relative">
+            <Input
+              value={import.meta.env.VITE_SUPABASE_ANON_KEY}
+              readOnly
+              className="font-mono text-xs pr-24"
+            />
+            <Button
+              className="absolute top-0 right-0"
+              variant="secondary"
+              onClick={copyApiKey}
+            >
+              Copy Key
+            </Button>
+          </div>
+        </div>
+
         <div>
           <h4 className="font-medium mb-2">Your User ID</h4>
           <p className="text-sm text-muted-foreground mb-2">
@@ -78,6 +107,7 @@ const Authentication = () => {
             <li>Your user ID is automatically generated and stored in your browser</li>
             <li>Use this ID consistently across all API requests to maintain data association</li>
             <li>The ID persists across sessions unless you clear your browser data</li>
+            <li>Include the API key in all requests as the 'apikey' header</li>
           </ul>
         </div>
       </div>
