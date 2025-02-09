@@ -17,16 +17,24 @@ serve(async (req) => {
     console.log('Creating XUMM payment request for amount:', amount)
 
     // Convert amount to drops (1 XRP = 1,000,000 drops)
-    const amountInDrops = Math.floor(parseFloat(amount) * 1_000_000).toString()
+    // Ensure the amount is formatted correctly
+    const amountInDrops = Math.round(parseFloat(amount) * 1_000_000).toString()
     console.log('Amount in drops:', amountInDrops)
+
+    const xummApiKey = Deno.env.get('XUMM_API_KEY')
+    const xummApiSecret = Deno.env.get('XUMM_API_SECRET')
+
+    if (!xummApiKey || !xummApiSecret) {
+      throw new Error('XUMM API credentials not configured')
+    }
 
     const xummApiUrl = 'https://xumm.app/api/v1/platform/payload'
     const response = await fetch(xummApiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-API-Key': Deno.env.get('XUMM_API_KEY')!,
-        'X-API-Secret': Deno.env.get('XUMM_API_SECRET')!
+        'X-API-Key': xummApiKey,
+        'X-API-Secret': xummApiSecret
       },
       body: JSON.stringify({
         txjson: {
@@ -37,18 +45,31 @@ serve(async (req) => {
         },
         options: {
           submit: true,
-          expire: 5 * 60 // 5 minutes
-        }
+          expire: 5 * 60, // 5 minutes
+          return_url: {
+            web: window.location.origin
+          }
+        },
+        user_token: user_id
       })
     });
 
-    if (!response.ok) {
-      const errorData = await response.json()
-      console.error('XUMM API Error Details:', errorData)
-      throw new Error(`XUMM API Error: ${errorData.error?.reference || errorData.message || response.statusText}`)
+    const responseText = await response.text()
+    console.log('XUMM API raw response:', responseText)
+
+    let payload
+    try {
+      payload = JSON.parse(responseText)
+    } catch (e) {
+      console.error('Failed to parse XUMM API response:', e)
+      throw new Error(`Invalid response from XUMM API: ${responseText}`)
     }
 
-    const payload = await response.json()
+    if (!response.ok) {
+      console.error('XUMM API Error Details:', payload)
+      throw new Error(`XUMM API Error: ${payload.error?.reference || payload.message || response.statusText}`)
+    }
+
     console.log('XUMM payment request response:', payload)
 
     if (!payload?.next?.always) {
