@@ -23,8 +23,7 @@ const Documentation = () => {
         <div>
           <h4 className="font-medium mb-2">Headers (Both Endpoints)</h4>
           <code className="block bg-muted p-2 rounded whitespace-pre">
-            {`Authorization: Bearer <user-jwt-token>
-Content-Type: application/json`}
+            {`Content-Type: application/json`}
           </code>
         </div>
         
@@ -33,6 +32,7 @@ Content-Type: application/json`}
           <code className="block bg-muted p-2 rounded whitespace-pre">
             {`{
   "agent_id": "string",
+  "user_id": "string (UUID)",
   "data_payload": object
 }`}
           </code>
@@ -43,6 +43,7 @@ Content-Type: application/json`}
           <code className="block bg-muted p-2 rounded whitespace-pre">
             {`{
   "agent_id": "string",
+  "user_id": "string (UUID)",
   "from_date": "ISO date string (optional)",
   "to_date": "ISO date string (optional)",
   "limit": number (optional),

@@ -19,33 +19,22 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    // Get the user from the request
-    const authHeader = req.headers.get('Authorization')?.split('Bearer ')[1]
-    if (!authHeader) {
-      throw new Error('No authorization header')
-    }
-
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(authHeader)
-    if (userError || !user) {
-      throw new Error('Invalid user token')
-    }
-
     if (req.method !== 'POST') {
       throw new Error('Method not allowed')
     }
 
     // Parse query parameters from request body
-    const { agent_id, from_date, to_date, limit, offset } = await req.json()
+    const { agent_id, user_id, from_date, to_date, limit, offset } = await req.json()
 
-    if (!agent_id) {
-      throw new Error('Missing required field: agent_id')
+    if (!agent_id || !user_id) {
+      throw new Error('Missing required fields: agent_id and user_id')
     }
 
     // Build the query
     let query = supabaseClient
       .from('ai_agent_data')
       .select('*')
-      .eq('user_id', user.id)
+      .eq('user_id', user_id)
       .eq('agent_id', agent_id)
       .order('created_at', { ascending: false })
 

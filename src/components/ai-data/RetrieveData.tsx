@@ -5,28 +5,25 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
-import { useNavigate } from 'react-router-dom';
 import { supabase } from "@/integrations/supabase/client";
 
 const RetrieveData = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [agentId, setAgentId] = useState('test-agent');
+  const [userId, setUserId] = useState('');
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
   const [limit, setLimit] = useState('10');
   const [retrievedData, setRetrievedData] = useState<any[]>([]);
   const { toast } = useToast();
-  const navigate = useNavigate();
 
   const handleDataRetrieval = async () => {
-    const session = await supabase.auth.getSession();
-    if (!session.data.session?.user) {
+    if (!userId.trim()) {
       toast({
-        title: "Authentication Required",
-        description: "Please log in to retrieve data.",
+        title: "User ID Required",
+        description: "Please enter a user ID to retrieve data.",
         variant: "destructive"
       });
-      navigate('/auth');
       return;
     }
 
@@ -36,6 +33,7 @@ const RetrieveData = () => {
       const response = await supabase.functions.invoke('ai-data-retriever', {
         body: {
           agent_id: agentId,
+          user_id: userId,
           from_date: fromDate || undefined,
           to_date: toDate || undefined,
           limit: limit ? parseInt(limit) : undefined,
@@ -66,6 +64,17 @@ const RetrieveData = () => {
     <Card className="p-6">
       <h3 className="text-lg font-semibold mb-4">Retrieve AI Agent Data</h3>
       <div className="space-y-4">
+        <div>
+          <Label htmlFor="userId">User ID</Label>
+          <Input
+            id="userId"
+            value={userId}
+            onChange={(e) => setUserId(e.target.value)}
+            className="w-full"
+            placeholder="Enter the user ID"
+          />
+        </div>
+
         <div>
           <Label htmlFor="retrieveAgentId">Agent ID</Label>
           <Input

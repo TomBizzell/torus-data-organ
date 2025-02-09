@@ -12,19 +12,17 @@ import { supabase } from "@/integrations/supabase/client";
 const SubmitData = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [agentId, setAgentId] = useState('test-agent');
+  const [userId, setUserId] = useState('');
   const [dataPayload, setDataPayload] = useState(JSON.stringify({ test: 'data' }, null, 2));
   const { toast } = useToast();
-  const navigate = useNavigate();
 
   const handleDataSubmission = async () => {
-    const session = await supabase.auth.getSession();
-    if (!session.data.session?.user) {
+    if (!userId.trim()) {
       toast({
-        title: "Authentication Required",
-        description: "Please log in to submit data.",
+        title: "User ID Required",
+        description: "Please enter a user ID to submit data.",
         variant: "destructive"
       });
-      navigate('/auth');
       return;
     }
 
@@ -36,6 +34,7 @@ const SubmitData = () => {
         body: {
           agent_id: agentId,
           data_payload: payload,
+          user_id: userId,
         },
       });
 
@@ -61,6 +60,17 @@ const SubmitData = () => {
     <Card className="p-6">
       <h3 className="text-lg font-semibold mb-4">Submit AI Agent Data</h3>
       <div className="space-y-4">
+        <div>
+          <Label htmlFor="userId">User ID</Label>
+          <Input
+            id="userId"
+            value={userId}
+            onChange={(e) => setUserId(e.target.value)}
+            className="w-full"
+            placeholder="Enter the user ID"
+          />
+        </div>
+
         <div>
           <Label htmlFor="submitAgentId">Agent ID</Label>
           <Input
