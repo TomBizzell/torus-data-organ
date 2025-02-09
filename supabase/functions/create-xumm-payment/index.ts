@@ -1,6 +1,5 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { XummSdk } from 'https://esm.sh/xumm-sdk@1.8.6'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -17,35 +16,46 @@ serve(async (req) => {
     const { amount, user_id } = await req.json()
     console.log('Creating XUMM payment request for amount:', amount)
     
-    const xumm = new XummSdk(
-      Deno.env.get('XUMM_API_KEY')!,
-      Deno.env.get('XUMM_API_SECRET')!
-    )
-
     // Format amount as proper string (XUMM expects string amounts)
     const formattedAmount = amount.toFixed(2)
 
-    // Create payment request with proper transaction format
-    const payload = await xumm.payload.create({
-      txjson: {
-        TransactionType: "Payment",
-        Destination: "rKN4rLYTYr8jTSt9jt4YHwEyQ7G9UZvyLF",
-        Amount: {
-          currency: "USD",
-          value: formattedAmount,
-          issuer: "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B"
-        }
+    // Instead of using the SDK, we'll make direct API calls
+    const xummApiUrl = 'https://xumm.app/api/v1/platform/payload';
+    const response = await fetch(xummApiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Key': Deno.env.get('XUMM_API_KEY')!,
+        'X-API-Secret': Deno.env.get('XUMM_API_SECRET')!
       },
-      options: {
-        submit: true,
-        expire: 5 * 60 // 5 minutes
-      }
-    })
+      body: JSON.stringify({
+        txjson: {
+          TransactionType: "Payment",
+          Destination: "rKN4rLYTYr8jTSt9jt4YHwEyQ7G9UZvyLF",
+          Amount: {
+            currency: "USD",
+            value: formattedAmount,
+            issuer: "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B"
+          }
+        },
+        options: {
+          submit: true,
+          expire: 5 * 60 // 5 minutes
+        }
+      })
+    });
 
-    console.log('XUMM payment request response:', payload)
+    if (!response.ok) {
+      const errorData = await response.text();
+      console.error('XUMM API Error:', errorData);
+      throw new Error(`XUMM API Error: ${response.status} ${response.statusText}`);
+    }
+
+    const payload = await response.json();
+    console.log('XUMM payment request response:', payload);
 
     if (!payload?.next?.always) {
-      throw new Error('Invalid response from XUMM API - missing QR URL')
+      throw new Error('Invalid response from XUMM API - missing QR URL');
     }
 
     return new Response(
