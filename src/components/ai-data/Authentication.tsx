@@ -33,6 +33,18 @@ const Authentication = () => {
     return () => subscription.unsubscribe();
   }, []);
 
+  const getLatestToken = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.access_token) {
+      setAuthToken(session.access_token);
+      navigator.clipboard.writeText(session.access_token);
+      toast({
+        title: "Fresh Token Copied",
+        description: "A fresh JWT token has been copied to your clipboard.",
+      });
+    }
+  };
+
   return (
     <Card className="p-6">
       <h3 className="text-lg font-semibold mb-4">Authentication Guide</h3>
@@ -52,7 +64,7 @@ const Authentication = () => {
               <h4 className="font-medium mb-2">Your JWT Token</h4>
               <p className="text-sm text-muted-foreground mb-2">
                 Use this token in your Authorization header when making API requests.
-                This token will refresh automatically when you're logged in.
+                Always get a fresh token by clicking the Copy button below.
               </p>
               <div className="relative">
                 <Textarea
@@ -63,15 +75,9 @@ const Authentication = () => {
                 <Button
                   className="absolute top-2 right-2"
                   variant="secondary"
-                  onClick={() => {
-                    navigator.clipboard.writeText(authToken);
-                    toast({
-                      title: "Token Copied",
-                      description: "The JWT token has been copied to your clipboard.",
-                    });
-                  }}
+                  onClick={getLatestToken}
                 >
-                  Copy
+                  Copy Fresh Token
                 </Button>
               </div>
             </div>
