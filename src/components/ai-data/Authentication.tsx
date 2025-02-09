@@ -9,6 +9,7 @@ import { nanoid } from 'nanoid';
 const Authentication = () => {
   const [userId, setUserId] = useState<string>('');
   const { toast } = useToast();
+  const apiKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxlY2FoY3NybnlxdW93aG14d2VyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzkwNDc2MTQsImV4cCI6MjA1NDYyMzYxNH0.idjB3qiJUjjWCS7AOI-qSK3YXwqppXArtlg6wm3K0Xo";
 
   useEffect(() => {
     // Check if user ID exists in localStorage
@@ -32,7 +33,7 @@ const Authentication = () => {
   };
 
   const copyApiKey = async () => {
-    await navigator.clipboard.writeText(import.meta.env.VITE_SUPABASE_ANON_KEY ?? '');
+    await navigator.clipboard.writeText(apiKey);
     toast({
       title: "API Key Copied",
       description: "The API key has been copied to your clipboard.",
@@ -50,7 +51,7 @@ const Authentication = () => {
           </p>
           <div className="relative">
             <Input
-              value={import.meta.env.VITE_SUPABASE_ANON_KEY}
+              value={apiKey}
               readOnly
               className="font-mono text-xs pr-24"
             />
@@ -92,7 +93,7 @@ const Authentication = () => {
             {`curl -X POST \\
   'https://lecahcsrnyquowhmxwer.functions.supabase.co/ai-data-receiver' \\
   -H 'Content-Type: application/json' \\
-  -H 'apikey: ${import.meta.env.VITE_SUPABASE_ANON_KEY ?? 'your-supabase-anon-key'}' \\
+  -H 'apikey: ${apiKey}' \\
   -d '{
   "agent_id": "test-agent",
   "user_id": "${userId}",
