@@ -31,7 +31,8 @@ const CryptoDonation = () => {
       const { data, error } = await supabase.functions.invoke('create-xumm-payment', {
         body: {
           amount: DONATION_AMOUNT,
-          user_id: user.id
+          user_id: user.id,
+          return_url: window.location.origin
         },
       });
 

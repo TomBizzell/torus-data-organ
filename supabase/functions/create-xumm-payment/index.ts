@@ -13,7 +13,7 @@ serve(async (req) => {
   }
 
   try {
-    const { amount, user_id } = await req.json()
+    const { amount, user_id, return_url } = await req.json()
     console.log('Creating XUMM payment request for amount:', amount)
 
     // Convert amount to drops (1 XRP = 1,000,000 drops)
@@ -47,7 +47,7 @@ serve(async (req) => {
           submit: true,
           expire: 5 * 60, // 5 minutes
           return_url: {
-            web: window.location.origin
+            web: return_url
           }
         },
         user_token: user_id
