@@ -14,6 +14,7 @@ serve(async (req) => {
   }
 
   try {
+    console.log('Creating Supabase client...');
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -24,11 +25,24 @@ serve(async (req) => {
     }
 
     // Parse query parameters from request body
-    const { agent_id, user_id, from_date, to_date, limit, offset } = await req.json()
+    const body = await req.json()
+    console.log('Received request body:', body);
+    
+    const { agent_id, user_id, from_date, to_date, limit, offset } = body
 
     if (!agent_id || !user_id) {
+      console.error('Missing required fields:', { agent_id, user_id });
       throw new Error('Missing required fields: agent_id and user_id')
     }
+
+    console.log('Building query with params:', {
+      agent_id,
+      user_id,
+      from_date,
+      to_date,
+      limit,
+      offset
+    });
 
     // Build the query
     let query = supabaseClient
@@ -52,13 +66,18 @@ serve(async (req) => {
       query = query.range(offset, offset + (limit || 10) - 1)
     }
 
+    console.log('Executing query...');
     const { data, error, count } = await query
+    console.log('Query results:', { data, error, count });
 
-    if (error) throw error
+    if (error) {
+      console.error('Database error:', error);
+      throw error;
+    }
 
     return new Response(
       JSON.stringify({ 
-        data,
+        data: data || [],
         count,
         message: 'Data retrieved successfully'
       }),
@@ -73,7 +92,10 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in ai-data-retriever:', error)
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message,
+        details: error.toString()
+      }),
       { 
         status: error.message === 'Method not allowed' ? 405 : 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
