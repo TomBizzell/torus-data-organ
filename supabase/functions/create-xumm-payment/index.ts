@@ -15,12 +15,11 @@ serve(async (req) => {
   try {
     const { amount, user_id } = await req.json()
     console.log('Creating XUMM payment request for amount:', amount)
-    
-    // Format amount as proper string (XUMM expects string amounts)
-    const formattedAmount = amount.toFixed(2)
 
-    // Instead of using the SDK, we'll make direct API calls
-    const xummApiUrl = 'https://xumm.app/api/v1/platform/payload';
+    // Format amount as proper string (XUMM expects string amounts)
+    const formattedAmount = amount.toString()
+
+    const xummApiUrl = 'https://xumm.app/api/v1/platform/payload'
     const response = await fetch(xummApiUrl, {
       method: 'POST',
       headers: {
@@ -46,16 +45,16 @@ serve(async (req) => {
     });
 
     if (!response.ok) {
-      const errorData = await response.text();
-      console.error('XUMM API Error:', errorData);
-      throw new Error(`XUMM API Error: ${response.status} ${response.statusText}`);
+      const errorData = await response.json()
+      console.error('XUMM API Error Details:', errorData)
+      throw new Error(`XUMM API Error: ${errorData.error?.reference || errorData.message || response.statusText}`)
     }
 
-    const payload = await response.json();
-    console.log('XUMM payment request response:', payload);
+    const payload = await response.json()
+    console.log('XUMM payment request response:', payload)
 
     if (!payload?.next?.always) {
-      throw new Error('Invalid response from XUMM API - missing QR URL');
+      throw new Error('Invalid response from XUMM API - missing QR URL')
     }
 
     return new Response(
