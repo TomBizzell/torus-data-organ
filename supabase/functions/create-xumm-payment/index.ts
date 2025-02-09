@@ -38,10 +38,7 @@ serve(async (req) => {
       },
       options: {
         submit: true,
-        expire: 5 * 60, // 5 minutes
-        return_url: {
-          web: window.location.origin
-        }
+        expire: 5 * 60 // 5 minutes
       }
     })
 
