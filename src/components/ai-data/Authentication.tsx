@@ -3,9 +3,8 @@ import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { useNavigate } from 'react-router-dom';
 import { useToast } from "@/components/ui/use-toast";
-import { v4 as uuidv4 } from 'uuid';
+import { nanoid } from 'nanoid';
 
 const Authentication = () => {
   const [userId, setUserId] = useState<string>('');
@@ -17,8 +16,8 @@ const Authentication = () => {
     if (storedUserId) {
       setUserId(storedUserId);
     } else {
-      // Generate new UUID and store it
-      const newUserId = uuidv4();
+      // Generate new ID using nanoid instead of UUID
+      const newUserId = nanoid();
       localStorage.setItem('cheslin_user_id', newUserId);
       setUserId(newUserId);
     }
