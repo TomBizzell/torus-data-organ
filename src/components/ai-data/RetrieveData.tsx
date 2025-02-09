@@ -14,6 +14,7 @@ const RetrieveData = () => {
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
   const [limit, setLimit] = useState('10');
+  const [offset, setOffset] = useState('0');
   const [retrievedData, setRetrievedData] = useState<any[]>([]);
   const { toast } = useToast();
 
@@ -29,6 +30,14 @@ const RetrieveData = () => {
 
     try {
       setIsProcessing(true);
+      console.log('Calling data retriever with params:', {
+        agent_id: agentId,
+        user_id: userId,
+        from_date: fromDate,
+        to_date: toDate,
+        limit: parseInt(limit),
+        offset: parseInt(offset)
+      });
       
       const response = await supabase.functions.invoke('ai-data-retriever', {
         body: {
@@ -37,11 +46,16 @@ const RetrieveData = () => {
           from_date: fromDate || undefined,
           to_date: toDate || undefined,
           limit: limit ? parseInt(limit) : undefined,
+          offset: offset ? parseInt(offset) : 0,
         },
       });
 
-      if (response.error) throw response.error;
+      if (response.error) {
+        console.error('Error response:', response.error);
+        throw response.error;
+      }
 
+      console.log('Retrieved data:', response.data);
       setRetrievedData(response.data.data);
       
       toast({
@@ -109,17 +123,31 @@ const RetrieveData = () => {
           </div>
         </div>
 
-        <div>
-          <Label htmlFor="limit">Limit Results</Label>
-          <Input
-            id="limit"
-            type="number"
-            value={limit}
-            onChange={(e) => setLimit(e.target.value)}
-            className="w-full"
-            min="1"
-            max="100"
-          />
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <Label htmlFor="limit">Limit Results</Label>
+            <Input
+              id="limit"
+              type="number"
+              value={limit}
+              onChange={(e) => setLimit(e.target.value)}
+              className="w-full"
+              min="1"
+              max="100"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="offset">Offset</Label>
+            <Input
+              id="offset"
+              type="number"
+              value={offset}
+              onChange={(e) => setOffset(e.target.value)}
+              className="w-full"
+              min="0"
+            />
+          </div>
         </div>
 
         <Button 
