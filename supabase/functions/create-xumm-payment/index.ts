@@ -16,8 +16,8 @@ serve(async (req) => {
     const { amount, user_id } = await req.json()
     console.log('Creating XUMM payment request for amount:', amount)
 
-    // Format amount as proper string (XUMM expects string amounts)
-    const formattedAmount = amount.toString()
+    // Format amount as proper string with the required precision
+    const formattedAmount = parseFloat(amount).toFixed(2)
 
     const xummApiUrl = 'https://xumm.app/api/v1/platform/payload'
     const response = await fetch(xummApiUrl, {
@@ -31,11 +31,9 @@ serve(async (req) => {
         txjson: {
           TransactionType: "Payment",
           Destination: "rKN4rLYTYr8jTSt9jt4YHwEyQ7G9UZvyLF",
-          Amount: {
-            currency: "USD",
-            value: formattedAmount,
-            issuer: "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B"
-          }
+          Amount: formattedAmount, // Amount in drops (1 XRP = 1,000,000 drops)
+          Fee: "12", // Standard transaction fee
+          // No explicit currency specification for XRP payments
         },
         options: {
           submit: true,
