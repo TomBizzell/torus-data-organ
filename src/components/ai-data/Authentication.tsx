@@ -7,9 +7,22 @@ import { useToast } from "@/components/ui/use-toast";
 import { nanoid } from 'nanoid';
 
 const Authentication = () => {
-  const apiKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxlY2FoY3NybnlxdW93aG14d2VyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzkwNDc2MTQsImV4cCI6MjA1NDYyMzYxNH0.idjB3qiJUjjWCS7AOI-qSK3YXwqppXArtlg6wm3K0Xo";
-  const [userId, setUserId] = useState<string>(apiKey);
+  const [userId, setUserId] = useState<string>('');
   const { toast } = useToast();
+  const apiKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxlY2FoY3NybnlxdW93aG14d2VyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzkwNDc2MTQsImV4cCI6MjA1NDYyMzYxNH0.idjB3qiJUjjWCS7AOI-qSK3YXwqppXArtlg6wm3K0Xo";
+
+  useEffect(() => {
+    // Check if user ID exists in localStorage
+    const storedUserId = localStorage.getItem('cheslin_user_id');
+    if (storedUserId) {
+      setUserId(storedUserId);
+    } else {
+      // Generate new ID using nanoid instead of UUID
+      const newUserId = nanoid();
+      localStorage.setItem('cheslin_user_id', newUserId);
+      setUserId(newUserId);
+    }
+  }, []);
 
   const copyUserId = async () => {
     await navigator.clipboard.writeText(userId);
@@ -92,8 +105,9 @@ const Authentication = () => {
         <div className="text-sm text-muted-foreground">
           <p className="mb-2">Notes:</p>
           <ul className="list-disc list-inside space-y-1">
-            <li>Your user ID is the same as your API key</li>
+            <li>Your user ID is automatically generated and stored in your browser</li>
             <li>Use this ID consistently across all API requests to maintain data association</li>
+            <li>The ID persists across sessions unless you clear your browser data</li>
             <li>Include the API key in all requests as the 'apikey' header</li>
           </ul>
         </div>
@@ -103,4 +117,3 @@ const Authentication = () => {
 };
 
 export default Authentication;
-
